@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>jmov — Admin</title>
+  <title>J CONFIGS — Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -203,7 +203,7 @@
 <!-- ── Login Screen ── -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">jmov</div>
+    <div class="login-logo">J CONFIGS</div>
     <h2>관리자 패널</h2>
     <input type="password" id="pw-input" placeholder="비밀번호"
            onkeydown="if(event.key==='Enter') doLogin()" />
@@ -215,7 +215,7 @@
 <!-- ── Main App ── -->
 <div id="app">
   <nav>
-    <span class="nav-logo">jmov Admin</span>
+    <span class="nav-logo">J CONFIGS Admin</span>
     <div class="nav-right">
       <span style="color:var(--muted);font-size:.85rem" id="nav-time"></span>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -251,6 +251,11 @@
       <div class="card-title">🎫 수동 코드 발급</div>
       <div class="form-row">
         <input type="text"   id="issue-name"   placeholder="입금자명" />
+        <input type="email"  id="issue-email"  placeholder="이메일 (코드 발송)" />
+        <select id="issue-product">
+          <option value="aim">🎯 에임어시스트</option>
+          <option value="movement">⚡ 무브먼트</option>
+        </select>
         <input type="number" id="issue-amount" placeholder="금액 (10000/20000/50000/100000)" />
         <button class="btn btn-accent" id="issue-btn" onclick="issueManual()">발급</button>
       </div>
@@ -272,6 +277,7 @@
             <tr>
               <th>주문 ID</th>
               <th>입금자</th>
+              <th>상품</th>
               <th>금액</th>
               <th>기간</th>
               <th>날짜</th>
@@ -282,7 +288,7 @@
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="9" class="empty-state">데이터를 불러오는 중...</td></tr>
+            <tr><td colspan="10" class="empty-state">데이터를 불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -297,9 +303,9 @@
   // ════════════════════════════════
   //   ★ 설정
   // ════════════════════════════════
-  const SCRIPT_URL   = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-  const ADMIN_TOKEN  = 'YOUR_ADMIN_TOKEN';   // Apps Script 쪽도 동일하게 설정
-  const ADMIN_PW_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // "admin" SHA-256 — 반드시 변경!
+  const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbx5txmb5mV92RypEWiXgceSj1RW-loP4dGijTEFVxhGHubsuCKpt9ZYlW8h9uOUT5xh/exec';
+  const ADMIN_TOKEN  = 'jconfigs3167';
+  const ADMIN_PW_HASH = 'c5b415656a192bbc08a33cb8718f7eb9673a80134e98ee01c31f99fe93cf842b';
 
   // ════════════════════════════════
   //   로그인
@@ -357,7 +363,7 @@
   // ════════════════════════════════
   async function loadOrders() {
     const tbody = document.getElementById('orders-body');
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><span class="spinner"></span></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><span class="spinner"></span></td></tr>';
 
     try {
       const url  = `${SCRIPT_URL}?action=admin&token=${ADMIN_TOKEN}&cmd=list`;
@@ -376,7 +382,7 @@
   function renderOrders(orders) {
     const tbody = document.getElementById('orders-body');
     if (!orders.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">주문 내역이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">주문 내역이 없습니다.</td></tr>';
       document.getElementById('row-count').textContent = '0건';
       return;
     }
@@ -394,6 +400,7 @@
         <tr>
           <td style="color:var(--muted);font-size:.8rem">${o.orderId || '—'}</td>
           <td><strong>${o.name}</strong></td>
+          <td>${o.product === 'aim' ? '🎯 에임어시스트' : o.product === 'movement' ? '⚡ 무브먼트' : '—'}</td>
           <td>${Number(o.amount).toLocaleString()}원</td>
           <td>${o.days}일</td>
           <td style="color:var(--muted)">${o.date}</td>
@@ -438,8 +445,10 @@
   //   수동 발급
   // ════════════════════════════════
   async function issueManual() {
-    const name   = document.getElementById('issue-name').value.trim();
-    const amount = parseInt(document.getElementById('issue-amount').value, 10);
+    const name    = document.getElementById('issue-name').value.trim();
+    const email   = document.getElementById('issue-email').value.trim();
+    const product = document.getElementById('issue-product').value;
+    const amount  = parseInt(document.getElementById('issue-amount').value, 10);
     if (!name || isNaN(amount)) { showToast('이름과 금액을 입력하세요.'); return; }
 
     const btn = document.getElementById('issue-btn');
@@ -447,7 +456,7 @@
     btn.disabled  = true;
 
     try {
-      const url  = `${SCRIPT_URL}?action=deposit&name=${encodeURIComponent(name)}&amount=${amount}&token=${ADMIN_TOKEN}&manual=1`;
+      const url  = `${SCRIPT_URL}?action=deposit&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&product=${product}&amount=${amount}&token=${ADMIN_TOKEN}&manual=1`;
       const res  = await fetch(url);
       const data = await res.json();
 
